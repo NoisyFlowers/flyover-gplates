@@ -35,12 +35,19 @@
 
 			</vl-map>
 
-			<select v-model="selected">
-				<option v-for="snapshot in snapshots" v-bind:value="snapshot">
-					{{ snapshot }}
-				</option>
-			</select>
-			Selected: {{ selected }}
+			<div>
+				<select v-model="selected">
+					<option v-for="snapshot in snapshots" v-bind:value="snapshot">
+						{{ snapshot }}
+					</option>
+				</select>
+				Selected: {{ selected }}
+			</div>
+
+			<div>
+				<button v-if="!stepTimer" @click="stepSnapshots">Step</button>
+				<button v-else @click="stopSnapshots">Stop</button>
+			</div>
 		</div>
 
 		<script>
@@ -72,7 +79,9 @@
 					allGPFeatures: [],
 					visGPFeatures: [],
 					snapshots: [],
-					selected: null
+					selected: null,
+					snapIndex: null,
+					stepTimer: null
 				  //}
 				},
 				mounted () {
@@ -118,6 +127,23 @@
 								resolve(response.data.features);
 							})
 						})
+					},
+
+					stepSnapshots () {
+						this.snapIndex = this.snapshots.indexOf(this.selected);
+						this.snapIndex = this.snapIndex === -1 ? 0 : this.snapIndex;
+						this.stepTimer = setInterval(() => { 
+									this.selected = this.snapshots[this.snapIndex];
+									this.snapIndex++;
+									if (this.snapIndex === this.snapshots.length) this.snapIndex = 0;
+									//this.snapIndex = this.snapIndex === this.snapshots.length-1 ? 
+									//	0 : ++this.snapIndex;
+						}, 500);
+					},
+
+					stopSnapshots () {
+						clearInterval(this.stepTimer);
+						this.stepTimer = null;
 					}
 				}
 
