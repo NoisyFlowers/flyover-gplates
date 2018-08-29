@@ -1,0 +1,115 @@
+<html>
+	<head>
+		<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+		<script src="https://unpkg.com/openlayers/dist/ol.js"></script>
+		<!-- include UMD VueLayers build -->
+		<link rel="stylesheet" href="https://unpkg.com/vuelayers/lib/style.css">
+		<script src="https://unpkg.com/vuelayers/lib/index.umd.js"></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+	</head>
+	<body>
+		<div id="app">
+		  {{ message }}
+		</div>	
+
+		<div id="app-2">
+		  <span v-bind:title="message">
+			Hover your mouse over me for a few seconds
+			to see my dynamically bound title!
+		  </span>
+		</div>
+
+		<div id="map">
+			<vl-map style="height: 400px" data-projection="EPSG:4326">
+				<vl-view :zoom.sync="zoom" :center.sync="center" :rotation.sync="rotation"></vl-view>
+
+				<vl-layer-tile>
+				  <vl-source-osm></vl-source-osm>
+				</vl-layer-tile>
+
+
+    			<vl-layer-vector :opacity=opacity>
+    				<!--<vl-source-vector :url="url"></vl-source-vector>-->
+					<vl-source-vector :features.sync="gp"></vl-source-vector>
+    			</vl-layer-vector>
+
+			</vl-map>
+
+			<select v-model="selected">
+				<option v-for="snapshot in snapshots" v-bind:value="snapshot">
+					{{ snapshot }}
+				</option>
+			</select>
+			Selected: {{ selected }}
+		</div>
+
+		<script>
+			const app = new Vue({
+			  el: '#app',
+			  data: {
+				message: 'Howdy hoedy'
+			  }
+			})
+
+			const app2 = new Vue({
+			  el: '#app-2',
+			  data: {
+				message: 'You loaded this page on ' + new Date().toLocaleString()
+			  }
+			})
+
+			Vue.use(VueLayers)
+
+			const map = new Vue({
+				el: '#map',
+				data: {
+				  //return { 
+					zoom: 2,
+					center: [0, 0],
+					rotation: 0,
+					url: '/layers/scotese_simplified75_epoch.geojson',
+					opacity: 0.25,
+					//gp: [{ "type": "Feature", "id": "6a18cd83-5b6a-4c73-a53d-adb7de69296a", "geometry": { "type": "Polygon", "coordinates": [ [ [ 52.242050458861726, -22.271429457966807 ], [ 51.99710234442558, -21.795040311288684 ], [ 52.84937305061257, -20.956823122041666 ], [ 53.638673776728226, -20.341426683007953 ], [ 54.38215878974266, -19.958069453838934 ], [ 55.136786790148484, -19.571461208508474 ], [ 56.05871433242483, -19.18299131574009 ], [ 56.78696499842563, -19.335997423447104 ], [ 57.3035637251395, -19.90552793292352 ], [ 57.88331341320608, -20.617893827385004 ], [ 58.393801543387546, -21.333199399776355 ], [ 58.97907697939211, -22.011693491414935 ], [ 60.062053659418645, -23.279292030025605 ], [ 60.719042879354404, -23.92543360335588 ], [ 61.318119020132, -24.525028361655885 ], [ 61.857896918399355, -25.031624220225034 ], [ 62.36379334331113, -25.63394562612813 ], [ 62.88390530506691, -26.35529167199042 ], [ 62.264441576686316, -26.380707812307318 ], [ 61.42952093810422, -26.131157215806265 ], [ 60.66672992732814, -25.884822375520116 ], [ 60.060457431506606, -25.685433488450887 ], [ 59.18578178877025, -25.324007729064583 ], [ 58.22949658998649, -25.135597660090394 ], [ 57.54619354799887, -24.946285170023124 ], [ 56.94361919480493, -24.57506213782126 ], [ 56.15008752550362, -24.37345387073294 ], [ 55.12236161135519, -24.18705522880249 ], [ 54.130567481659035, -24.20591501210468 ], [ 53.58581729224475, -23.660279744064226 ], [ 52.82670721319522, -23.024409544601973 ], [ 52.242050458861726, -22.271429457966807 ] ] ] }, "properties": { "_uid_": 618, "gid": 28287, "time": 266, "plateid1": 507 } }]
+					//gp: [],
+					gresp: null,
+					gp:[],
+					snapshots: [],
+					selected: null
+				  //}
+				},
+				mounted () {
+					axios
+				  	.get('/layers/scotese_simplified75_epoch.geojson')
+				  	.then(response => {
+						console.log(response);
+						this.gresp = response.data;
+						
+						this.snapshots = response.data.features.reduce((acc, feature) => {
+							//console.log(feature);
+							console.log(acc);
+							if (!acc.includes(feature.properties.time)) {
+								return acc.concat(feature.properties.time);
+							} else {
+								return acc;
+							}
+						}, []).sort((a,b) => a-b);								 
+
+					})
+
+				},
+				watch: {
+					selected: function(newVal, oldVal) {
+						if (this.gresp === null) this.gp = [];
+						this.gp =  this.gresp.features.filter(feature => {
+							return feature.properties.time === this.selected;
+						});//.map(Object.freeze);
+					}
+				}
+
+
+			})
+
+		</script>
+
+	</body>
+</html>
